@@ -4,6 +4,9 @@ Calculate closest and furthest neighbor in high dimensional space.
 
 The neighbors tend to cluster in the shell in higher spaces.
 
+This is a modified version of the code using dynamic allocation instead of static.
+See if I still remember how to use mallocs...
+
 @author Haphaeu
 
 code in python:
@@ -34,68 +37,61 @@ def do_stuff():
 #include <float.h>
 #include <time.h>
 
-#define minN 10000
-#define maxN 11000
-#define stepN 2000
-#define M 10000
-#define DBG 0
+//#define DBG 1
+global int DBG
 
-double* dist_Euclidian(double *ref, double *sample, int n) {
-    static double dist[M];
+double* dist_Euclidian(double *ref, double *sample, int n, int m) {
+
+    double *distE;
+    distE = (double*) malloc(m * sizeof(double));
+    
     double sum;
-    for (int j=0; j<M; j++) {
+    for (int j=0; j<m; j++) {
         sum = 0.0;
         for (int i=0; i<n; i++) {
-            sum += pow(ref[i] - sample[j*M+i], 2);
+            sum += pow(ref[i] - sample[j*n+i], 2);
         }
-        dist[j] = pow(sum, 0.5);
+        distE[j] = pow(sum, 0.5);
     }
-    return dist;
+    return distE;
 }
 
-double* generate(const int n) {
-    static double vect[M*maxN];
-    for (int j=0; j<M; j++) {
-        for (int i=0; i<n;i++) {
-            vect[j*M+i] = (double)rand()/RAND_MAX;
+double* generate(const int n, const int m) {
+    double *vect;
+    vect = (double*) malloc(m*n * sizeof(double));
+    
+    for (int j = 0; j < m; j++) {
+        for (int i = 0; i < n; i++) {
+            vect[j*n + i] = (double) rand()/RAND_MAX;
         }
     }
     return vect;
 }
 
-
-double* generate_ref(const int n) {
-    static double vect[maxN];
-    for (int i=0; i<n;i++) {
-        vect[i] = (double)rand()/RAND_MAX;
-    }
-    return vect;
-}
-
-double* get_stats(double *dist) {
+double* get_stats(double *dist, const int m) {
     double ave, mn, mx;
     static double stats[3];
 
     ave = 0.0;
     mn = DBL_MAX; mx = -DBL_MAX;
-    for (int j=0; j<M; j++) {
+    for (int j=0; j<m; j++) {
         ave += dist[j];
         if (dist[j] < mn)
             mn = dist[j];
         if (dist[j] > mx)
             mx = dist[j];
     }
-    ave /= M;
+    ave /= m;
     stats[0] = ave; stats[1] = mn; stats[2] = mx;
     return stats;
 }
 
-int do_stuff() {
+int do_stuff(int minN, int maxN, int stepN, int m) {
     
     double* stats;
     double* ref;
     double* sample;
-    double *dist;
+    double* dist;
     
     clock_t tc;
     int msec;
@@ -103,30 +99,30 @@ int do_stuff() {
     for (int n=minN; n<maxN; n+=stepN) {
         
         tc = clock();
-        ref = generate_ref(n);
+        ref = generate(n, 1);
         msec = (clock() - tc) * 1000 / CLOCKS_PER_SEC;
-        printf("generate_ref \t %ds %dmsec\n", msec/1000, msec%1000);
+        if (DBG) printf("generate_ref \t %ds %dmsec\n", msec/1000, msec%1000);
         
         tc = clock();
-        sample = generate(n);
+        sample = generate(n, m);
         msec = (clock() - tc) * 1000 / CLOCKS_PER_SEC;
-        printf("generate     \t %ds %dmsec\n", msec/1000, msec%1000);
+        if (DBG) printf("generate     \t %ds %dmsec\n", msec/1000, msec%1000);
         
         tc = clock();
-        dist = dist_Euclidian(ref, sample, n);
+        dist = dist_Euclidian(ref, sample, n, m);
         msec = (clock() - tc) * 1000 / CLOCKS_PER_SEC;
-        printf("dist_Eucl.   \t %ds %dmsec\n", msec/1000, msec%1000);
+        if (DBG) printf("dist_Eucl.   \t %ds %dmsec\n", msec/1000, msec%1000);
         
         tc = clock();
-        stats = get_stats(dist);
+        stats = get_stats(dist, m);
         msec = (clock() - tc) * 1000 / CLOCKS_PER_SEC;
-        printf("get_stats    \t %ds %dmsec\n", msec/1000, msec%1000);
+        if (DBG) printf("get_stats    \t %ds %dmsec\n", msec/1000, msec%1000);
         
         tc = clock();
         free(ref);
         free(sample);
         msec = (clock() - tc) * 1000 / CLOCKS_PER_SEC;
-        printf("free took    \t %ds %dmsec\n", msec/1000, msec%1000);
+        if (DBG) printf("free took    \t %ds %dmsec\n", msec/1000, msec%1000);
         
         printf("%d \t %.2f \t %.2f \t %.2f \n", n, stats[0], stats[1], stats[2]);
     }
@@ -134,9 +130,23 @@ int do_stuff() {
     return 0;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    if ( argc != 5 ) 
+    {
+        printf( "usage: %s minN maxN stepN M", argv[0] );
+        return 1;
+    }
+    
+    DBG = 1;
+    
+    unsigned int minN = atoi(argv[1]);
+    unsigned int maxN = atoi(argv[2]);
+    unsigned int stepN = atoi(argv[3]);
+    unsigned int m = atoi(argv[4]);
+    
+    
     clock_t t0 = clock();
-    do_stuff();
+    do_stuff(minN, maxN, stepN, m);
     t0 = clock() - t0;
     int msec = t0 * 1000 / CLOCKS_PER_SEC;
     printf("============\nruntime %ds %dms\n", msec/1000, msec%1000);
