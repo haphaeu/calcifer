@@ -38,9 +38,9 @@ def do_stuff():
 #include <time.h>
 
 //#define DBG 1
-global int DBG
+int DBG;
 
-double* dist_Euclidian(double *ref, double *sample, int n, int m) {
+double* dist_Euclidian(double *ref, double *sample, long n, int m) {
 
     double *distE;
     distE = (double*) malloc(m * sizeof(double));
@@ -48,7 +48,7 @@ double* dist_Euclidian(double *ref, double *sample, int n, int m) {
     double sum;
     for (int j=0; j<m; j++) {
         sum = 0.0;
-        for (int i=0; i<n; i++) {
+        for (long i=0; i<n; i++) {
             sum += pow(ref[i] - sample[j*n+i], 2);
         }
         distE[j] = pow(sum, 0.5);
@@ -56,12 +56,13 @@ double* dist_Euclidian(double *ref, double *sample, int n, int m) {
     return distE;
 }
 
-double* generate(const int n, const int m) {
-    double *vect;
+double* generate(const long n, const int m) {
+    static double *vect;
+    printf("generating n, m, n*m: %d, %d, %d\n", n, m, m*n);
     vect = (double*) malloc(m*n * sizeof(double));
     
     for (int j = 0; j < m; j++) {
-        for (int i = 0; i < n; i++) {
+        for (long i = 0; i < n; i++) {
             vect[j*n + i] = (double) rand()/RAND_MAX;
         }
     }
@@ -86,7 +87,7 @@ double* get_stats(double *dist, const int m) {
     return stats;
 }
 
-int do_stuff(int minN, int maxN, int stepN, int m) {
+int do_stuff(long minN, long maxN, int stepN, int m) {
     
     double* stats;
     double* ref;
@@ -96,7 +97,7 @@ int do_stuff(int minN, int maxN, int stepN, int m) {
     clock_t tc;
     int msec;
 
-    for (int n=minN; n<maxN; n+=stepN) {
+    for (long n=minN; n<maxN; n+=stepN) {
         
         tc = clock();
         ref = generate(n, 1);
@@ -131,16 +132,17 @@ int do_stuff(int minN, int maxN, int stepN, int m) {
 }
 
 int main(int argc, char *argv[]) {
-    if ( argc != 5 ) 
+    if ( argc < 5 ) 
     {
         printf( "usage: %s minN maxN stepN M", argv[0] );
         return 1;
     }
+    DBG = 0;
+    if ( argc == 6)
+        DBG = atoi(argv[5]);
     
-    DBG = 1;
-    
-    unsigned int minN = atoi(argv[1]);
-    unsigned int maxN = atoi(argv[2]);
+    unsigned long minN = atoi(argv[1]);
+    unsigned long maxN = atoi(argv[2]);
     unsigned int stepN = atoi(argv[3]);
     unsigned int m = atoi(argv[4]);
     
@@ -150,5 +152,7 @@ int main(int argc, char *argv[]) {
     t0 = clock() - t0;
     int msec = t0 * 1000 / CLOCKS_PER_SEC;
     printf("============\nruntime %ds %dms\n", msec/1000, msec%1000);
+    
+    return 0;
 }
 
