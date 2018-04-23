@@ -25,17 +25,18 @@ Results are found by the help function find_ss() and get_sample()
 #include <math.h>
 #include <ctype.h>
 
-#define LINE_SIZE 200        // max line length in results.txt
+#define LINE_SIZE 300        // max line length in results.txt
 #define MAX_VARS 50          // max number of variables in results.txt
 #define MAX_VARNAME_SIZE 50  // max length of variable name
 #define MAX_SEEDS 200        // max number of seeds
 
 
-#define MAX_NUM_HS 25  
+#define MAX_NUM_HS 30  
 #define MAX_NUM_TP 12  
 #define NUM_WD 3       
 #define MATRIX_SZ MAX_SEEDS*(MAX_VARS+3)*MAX_NUM_HS*MAX_NUM_TP*NUM_WD
 
+#define DBG 0
 
 static double matrix[MATRIX_SZ];
 char vars_names[MAX_VARS][MAX_VARNAME_SIZE];
@@ -65,13 +66,13 @@ int find_ss(float hs, float tp, float wd) {
 }
 
 
-double *get_sample(float hs, float tp, float wd, short i_var) {
-    double *spl;
-    spl = (double*) malloc(nseeds * sizeof(double));
+void get_sample(float hs, float tp, float wd, short i_var, double *spl) {
+    //double *spl;
+    //spl = (double*) malloc(nseeds * sizeof(double));
     int i0 = find_ss(hs, tp, wd);
     for (int i=0; i<nseeds; i++)
         spl[i] = matrix[(i0+i)*(3+nvars) + 3 + i_var];
-    return spl;
+    //return spl;
 }
 
 void add_if_not_exist(float x, float *set, short *sz) {
@@ -86,8 +87,11 @@ void add_if_not_exist(float x, float *set, short *sz) {
 }
 
 void analyse_results() {
+    if (DBG) printf("in analyse_results()\n");
+    
     float hsi, tpi, wdi, hsi0, tpi0, wdi0;
-    short i, nseedsi = 0, nseeds0 = 0;
+    short nseedsi = 0, nseeds0 = 0;
+    long i;
     nhs = 0; nwd = 0; 
     for (i=0; i<MAX_NUM_HS; i++)
         ntp[i] = 0;
@@ -96,9 +100,12 @@ void analyse_results() {
         tpi = matrix[i*(3+nvars) + 1];
         wdi = matrix[i*(3+nvars) + 2];
         nseedsi++; // increment number of seed
+        
+        // NEED TO ADD A CHECK OF LIMITS HERE
         add_if_not_exist(hsi, hs, &nhs);
         add_if_not_exist(tpi, tp[nhs-1], &ntp[nhs-1]);
         add_if_not_exist(wdi, wd, &nwd); 
+        if (DBG) printf("nhs, ntp[hs], nwd: %d, %d, %d\n", nhs, ntp[nhs-1], nwd);
         
         // This long if below is to capture the number of seeds
         // and make sure that all sea states have the same nseeds
@@ -107,6 +114,9 @@ void analyse_results() {
                  (fabs(tpi-tpi0) > 1e-4) ||
                  (fabs(wdi-wdi0) > 1e-4) ) {
                 nseedsi--;
+                
+                if (0*DBG) printf("  row, seed, Hs, Tp, Wd: %d, %d, %.1f, %.1f, %.0f\n", i, nseedsi, hsi, tpi, wdi);
+                
                 if (nseeds0 && (nseeds0 != nseedsi))
                     printf("\n\nERRO - number of seeds varied - cases crahed?");
                 nseeds0 = nseedsi;
@@ -135,9 +145,12 @@ void analyse_results() {
             printf("  %.1f", tp[i][j]);
     }
     printf("\n");
+    
+    if (DBG) printf("end analyse_results\n");
 }
 
-void read_results(char *fname) {
+void read_results(const char *fname) {
+    if (DBG) printf("in read_results()\n");
     
     char line[LINE_SIZE];
     char *token;
@@ -163,12 +176,13 @@ void read_results(char *fname) {
         strcpy(vars_names_lower[i], vars_names[i]);
         char *p = vars_names_lower[i];
         for ( ; *p; ++p) *p = tolower(*p);  // converts vars_names_lower to lower case
-        //printf("%s  ->  %s\n", vars_names[i], vars_names_lower[i]);
+        if (DBG) printf("%s  ->  %s\n", vars_names[i], vars_names_lower[i]);
 
     }
 
     // Continue reading the values
-    short ihs, itp, iwd, ivar, iseed, i = 0, rows=0;
+    short ihs, itp, iwd, ivar, iseed;
+    int i = 0, rows=0;
     float wdi;
 
     while(fgets(line, LINE_SIZE, fp)) {
@@ -183,6 +197,8 @@ void read_results(char *fname) {
     }
     nrows = rows;
     fclose(fp);
+    
+    if (DBG) printf("end read_results()\n");
 }
 
 
@@ -200,7 +216,8 @@ void show_results() {
 
 void show_sample() {
     printf("\n\nTesting get_sample\n\n");
-    double *sample = get_sample(3.5, 14.0, 195.0, 0);
+    double sample[nseeds];
+    get_sample(3.5, 14.0, 195.0, 0, sample);
     for (int i=0; i<nseeds; i++)
         printf("%f\n", sample[i]);
 }

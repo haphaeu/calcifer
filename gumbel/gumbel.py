@@ -36,14 +36,18 @@ df1 = (data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].mean() -
 df1[var+' p90'] = data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].quantile(p).max(
                   level=[0, 1]).reset_index()[var]
 
-# Min
-var = data.columns[4]
-# g90
-df1[var] = (data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].mean() +
+for var in data.columns[4:]:
+    if 'max' in var.lower():
+        df1[var] = (data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].mean() -
+                    f * data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].std()).max(
+                    level=[0, 1]).reset_index()[var]
+        df1[var+' p90'] = data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].quantile(p).max(
+                    level=[0, 1]).reset_index()[var]
+    else:
+        df1[var] = (data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].mean() +
             f * data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].std()).min(
             level=[0, 1]).reset_index()[var]
-# p90
-df1[var+' p90'] = data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].quantile(1-p).min(
+        df1[var+' p90'] = data.groupby(['WaveHs', 'WaveTp', 'WaveDirection'])[var].quantile(1-p).min(
                   level=[0, 1]).reset_index()[var]
 
 print(df1)
@@ -68,9 +72,7 @@ fromC = '''
 fromC = [_.split('   ') for _ in fromC.split('\n')]
 fromC = [[float(x) for x in line] for line in fromC]
 
-dfC = pd.DataFrame(columns=['WaveHs', 'WaveTp', 'Link1 Max Tension', 'Link1 Max Tension p90',
-                            'Link1 Min Tension', 'Link1 Min Tension p90'],
-                   data=fromC)
+dfC = pd.DataFrame(columns=df1.columns, data=fromC)
 
 print(100*(df1-dfC)/df1)
 
