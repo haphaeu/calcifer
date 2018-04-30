@@ -7,6 +7,9 @@
 *.obj
 *.elf
 
+# Make dependency
+.dep.inc
+
 # Linker output
 *.ilk
 *.map
