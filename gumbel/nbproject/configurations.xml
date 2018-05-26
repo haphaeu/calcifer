@@ -46,6 +46,7 @@
       <compileType>
         <cTool>
           <standard>10</standard>
+          <commandLine>-lm</commandLine>
         </cTool>
       </compileType>
       <item path="gumbel.c" ex="false" tool="0" flavor2="0">

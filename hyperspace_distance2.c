@@ -58,7 +58,7 @@ double* dist_Euclidian(double *ref, double *sample, long n, int m) {
 
 double* generate(const long n, const int m) {
     static double *vect;
-    printf("generating n, m, n*m: %d, %d, %d\n", n, m, m*n);
+    if (DBG) printf("generating n, m, n*m: %d, %d, %d\n", n, m, m*n);
     vect = (double*) malloc(m*n * sizeof(double));
     
     for (int j = 0; j < m; j++) {
