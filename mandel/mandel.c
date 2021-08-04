@@ -1,21 +1,25 @@
 /*
-Mock-up implementation using multithreading to benchmark performance.
+Mandelbrot set
 
-This does do anything specific rather than calculating various
-spectra and timetraces with very refined steps.
+Calculation of the Mandelbrot set.
+
+Preliminary, many simplifications at the moment:
+  - only the number of iteractions matrix is being filled.
+  - no colormapping neither plotting is implemented.
+  - domain is hard coded
 
 Linux:
-    gcc jonswap_multithread.c -o jonswap_multithread -lm -lpthread -Wno-implicit-function-declaration
+    gcc mandel.c -o mandel -lm -lpthread -Wno-implicit-function-declaration
 
 in windows, add the flags:
-    -Dsrandom=srand -Drandom=rand -std=c11 
+    -std=c11 
 
 
 queue with pthread
 https://stackoverflow.com/questions/4577961/pthread-synchronized-blocking-queue
 
 #+AUTHOR Rafael Rossi
-#+DATE 25-Oct-2019
+#+DATE 04-Aug-2021
 
 */
 #include <stdio.h>
@@ -74,9 +78,18 @@ int main(int argc, char *argv[]) {
         num_threads = n < MAX_NUM_THREADS ? n : MAX_NUM_THREADS;
     }
     
+    // TODO
+    //
+    // Queue is not implemented. Hence the domain will be split
+    // by the number of thread, hence pixels per thread is fixed
+    // such that:
+    //     len(thread_args) == num_threads
+    // Ideally the pixels per thread is user input and a queue is
+    // created with more entries than the number of threads. The
+    // threads consume items from the queue.
     pixel_per_thread = XRES / num_threads + 1;
 
-    // define a queue of args for the threads
+    // define a list of args for the threads
     int c = 0;
     int end;
     for(int i=0; i<XRES; i+=pixel_per_thread) {
