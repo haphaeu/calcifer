@@ -15,7 +15,7 @@
 
 c:/Users/rarossi/portable/Cpp/App/Dev-Cpp/MinGW64/bin/gcc -std=c11 jonswap.c -o jonswap
 
-gcc -lm jonswap.c -o jonswap.out
+gcc jonswap.c -lm -o jonswap.out
 
 * JONSWAP spectrum calculations
 
@@ -32,7 +32,10 @@ Also calculates a time history of wave elevation according to that spectrum.
 #include <time.h>
 #include <math.h>
 
-#include "gnuplot_i.h"
+#define INCLUDE_GNUPLOT 0
+#if INCLUDE_GNUPLOT
+    #include "gnuplot_i.h"
+#endif
 
 #define PI            3.14159265358979323846
 #define TWOPI         6.28318530717958647692
@@ -58,8 +61,9 @@ double* phases(int length, int seed);
 double* time_domain(double to, double tf, double ts, int *length);
 double* wave_elevation(double *amp, double *w, double *phi, double *t, int len_spectrum, int len_tt);
 
-void plot(double *x, double *y, int npoints);
-
+#if INCLUDE_GNUPLOT
+    void plot(double *x, double *y, int npoints);
+#endif
 
 int main(int argc, char *argv[]) {
 
@@ -71,10 +75,12 @@ int main(int argc, char *argv[]) {
     int nharms, tt_size, seed;
     short show_spectrum, show_timetrace;
     
-    // handler for the gnuplot interface
-    gnuplot_ctrl *h1, *h2;
-    h1 = gnuplot_init(); h2 = gnuplot_init();
-    gnuplot_setstyle(h1, "lines"); gnuplot_setstyle(h2, "lines");
+    #if INCLUDE_GNUPLOT
+        // handler for the gnuplot interface
+        gnuplot_ctrl *h1, *h2;
+        h1 = gnuplot_init(); h2 = gnuplot_init();
+        gnuplot_setstyle(h1, "lines"); gnuplot_setstyle(h2, "lines");
+    #endif
 
     // hard coded inits
     w1 = 0.2;
@@ -160,7 +166,9 @@ int main(int argc, char *argv[]) {
         // m0 = Hs**2 / 16 ==> Hs = 4*sqrt(m0)
         printf("Check Hs %.2f m\n", 4*sqrt(spectral_moment(0, js, w, nharms)));
     if (show_spectrum){
-        gnuplot_plot_xy(h1, t, js, nharms, "Spectrum");
+        #if INCLUDE_GNUPLOT
+            gnuplot_plot_xy(h1, t, js, nharms, "Spectrum");
+        #endif
         printf("\nSpectrum\n\n");
         printf("%10s %10s %12s %12s %12s %10s \n", "T", "w", "PM", "JS", "amp", "phi");
         printf("%10s %10s %12s %12s %12s %10s \n", "[s]", "[rd/s]", "[m2s/rd]", "[m2s/rd]", "[m]", "[rd]");
@@ -168,17 +176,22 @@ int main(int argc, char *argv[]) {
             printf("%10.3f %10.3f %12.5f %12.5f %12.5f %10.3f\n", t[i], w[i], pm[i], js[i], amp[i], phi[i]);
     }
     if (show_timetrace) {
-        gnuplot_plot_xy(h2, tt, eta, tt_size, "Time History");
+        #if INCLUDE_GNUPLOT
+            gnuplot_plot_xy(h2, tt, eta, tt_size, "Time History");
+        #endif
         printf("\nTime History\n\n");
         printf("%10s %10s \n", "Time", "Elevation");
         for (int j = 0; j < tt_size; ++j)
             printf("%10.2f %10.3f\n", tt[j], eta[j]);
     }
     
-    printf("Press Enter to exit.\n");
-    char input[5];
-    fgets(input, sizeof input, stdin);
-    gnuplot_close(h1); gnuplot_close(h2);
+    #if INCLUDE_GNUPLOT
+        printf("Press Enter to exit.\n");
+        char input[5];
+        fgets(input, sizeof input, stdin);
+        gnuplot_close(h1); gnuplot_close(h2);
+    #endif
+
     return 0;
 }
 
